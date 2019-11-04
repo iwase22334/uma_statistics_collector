@@ -1,0 +1,98 @@
+CREATE TABLE uma_statistics_01
+(
+    year char(4),
+    monthday char(4),
+    jyocd char(2),
+    kaiji char(2),
+    nichiji char(2),
+    racenum char(2),
+    kettonum char(10),
+    ruikeihonshiba INT,
+    ruikeihondirt INT,
+    ruikeifukashiba INT,
+    ruikeifukadirt INT,
+    ruikeisyutokushiba INT, /*ruikeihonshiba + ruikeifukashiba */
+    ruikeisyutokudirt INT,
+    ruikeichakukaisu1 SMALLINT, /* Total number of syusso that including under 5th */
+    chakukaisu1 SMALLINT,
+    chakukaisu2 SMALLINT,
+    chakukaisu3 SMALLINT,
+    chakukaisu4 SMALLINT,
+    chakukaisu5 SMALLINT,
+    sshibachakukaisu1 SMALLINT, /* straight shiba  */
+    sshibachakukaisu2 SMALLINT,
+    sshibachakukaisu3 SMALLINT,
+    sshibachakukaisu4 SMALLINT,
+    sshibachakukaisu5 SMALLINT,
+    rshibachakukaisu1 SMALLINT, /* right curve shiba  */
+    rshibachakukaisu2 SMALLINT,
+    rshibachakukaisu3 SMALLINT,
+    rshibachakukaisu4 SMALLINT,
+    rshibachakukaisu5 SMALLINT,
+    lshibachakukaisu1 SMALLINT, /* left curve shiba  */
+    lshibachakukaisu2 SMALLINT,
+    lshibachakukaisu3 SMALLINT,
+    lshibachakukaisu4 SMALLINT,
+    lshibachakukaisu5 SMALLINT,
+    sdirtchakukaisu1 SMALLINT,
+    sdirtchakukaisu2 SMALLINT,
+    sdirtchakukaisu3 SMALLINT,
+    sdirtchakukaisu4 SMALLINT,
+    sdirtchakukaisu5 SMALLINT,
+    rdirtchakukaisu1 SMALLINT,
+    rdirtchakukaisu2 SMALLINT,
+    rdirtchakukaisu3 SMALLINT,
+    rdirtchakukaisu4 SMALLINT,
+    rdirtchakukaisu5 SMALLINT,
+    ldirtchakukaisu1 SMALLINT,
+    ldirtchakukaisu2 SMALLINT,
+    ldirtchakukaisu3 SMALLINT,
+    ldirtchakukaisu4 SMALLINT,
+    ldirtchakukaisu5 SMALLINT,
+    u16shibachakukaisu1 SMALLINT, /* less than 1600m */
+    u16shibachakukaisu2 SMALLINT,
+    u16shibachakukaisu3 SMALLINT,
+    u16shibachakukaisu4 SMALLINT,
+    u16shibachakukaisu5 SMALLINT,
+    u22shibachakukaisu1 SMALLINT, /* 1600m < kyori <= 2200m*/
+    u22shibachakukaisu2 SMALLINT,
+    u22shibachakukaisu3 SMALLINT,
+    u22shibachakukaisu4 SMALLINT,
+    u22shibachakukaisu5 SMALLINT,
+    u28shibachakukaisu1 SMALLINT, /* under 2800m */
+    u28shibachakukaisu2 SMALLINT,
+    u28shibachakukaisu3 SMALLINT,
+    u28shibachakukaisu4 SMALLINT,
+    u28shibachakukaisu5 SMALLINT,
+    o28shibachakukaisu1 SMALLINT, /* kyori >= 2800m */
+    o28shibachakukaisu2 SMALLINT,
+    o28shibachakukaisu3 SMALLINT,
+    o28shibachakukaisu4 SMALLINT,
+    o28shibachakukaisu5 SMALLINT,
+    u16dirtchakukaisu1 SMALLINT,
+    u16dirtchakukaisu2 SMALLINT,
+    u16dirtchakukaisu3 SMALLINT,
+    u16dirtchakukaisu4 SMALLINT,
+    u16dirtchakukaisu5 SMALLINT,
+    u22dirtchakukaisu1 SMALLINT,
+    u22dirtchakukaisu2 SMALLINT,
+    u22dirtchakukaisu3 SMALLINT,
+    u22dirtchakukaisu4 SMALLINT,
+    u22dirtchakukaisu5 SMALLINT,
+    u28dirtchakukaisu1 SMALLINT,
+    u28dirtchakukaisu2 SMALLINT,
+    u28dirtchakukaisu3 SMALLINT,
+    u28dirtchakukaisu4 SMALLINT,
+    u28dirtchakukaisu5 SMALLINT,
+    o28dirtchakukaisu1 SMALLINT,
+    o28dirtchakukaisu2 SMALLINT,
+    o28dirtchakukaisu3 SMALLINT,
+    o28dirtchakukaisu4 SMALLINT,
+    o28dirtchakukaisu5 SMALLINT,
+    kyakusitukubunkaisu1 SMALLINT, /* number of Nige */
+    kyakusitukubunkaisu2 SMALLINT, /* number of Senko */
+    kyakusitukubunkaisu3 SMALLINT, /* number of Sashi */
+    kyakusitukubunkaisu4 SMALLINT,  /* number of Oi */
+    PRIMARY KEY (year, monthday, jyocd, kaiji, nichiji, racenum, kettonum)
+);
+
