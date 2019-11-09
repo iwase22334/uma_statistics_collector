@@ -11,9 +11,7 @@ CREATE TABLE uma_statistics_01
     ruikeihondirt INT,
     ruikeifukashiba INT,
     ruikeifukadirt INT,
-    ruikeisyutokushiba INT, /*ruikeihonshiba + ruikeifukashiba */
-    ruikeisyutokudirt INT,
-    ruikeichakukaisu1 SMALLINT, /* Total number of syusso that including under 5th */
+    ruikeichakukaisu SMALLINT, /* Total number of syusso that including under 5th */
     chakukaisu1 SMALLINT,
     chakukaisu2 SMALLINT,
     chakukaisu3 SMALLINT,

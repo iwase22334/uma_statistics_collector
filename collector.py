@@ -104,74 +104,69 @@ def add(statistics, key, val):
     statistics[key] = statistics[key] + val
 
 def update_statistics(statistics, race_info, kakuteijyuni_str, kyakusitukubun_str):
-    trackcd     = int(row[RaceInfoReference.index('trackcd')])
+    trackcd     = int(race_info[RaceInfoReference.index('trackcd')])
     kakuteijyuni = int(kakuteijyuni_str)
     kyakusitukubun = int(kyakusitukubun_str)
 
     if kakuteijyuni == 0:
         raise RuntimeError("Unexpected kakuteijyuni: 0")
 
+    jyunikey = str(kakuteijyuni)
+
+    kyori = int(race_info[RaceInfoReference.index('kyori')])
+    if kyori >= 1000 and kyori <= 1600:
+        kyorikey = 'u16'
+    elif kyori <= 2200:
+        kyorikey = 'u22'
+    elif kyori <= 2800:
+        kyorikey = 'u28'
+    elif kyori > 2800 and kyori <= 3600:
+        kyorikey = 'o28'
+    else:
+        raise RuntimeError("Unexpected kyori type: %d" % (kyori,))
+
+    if trackcd == 0:
+        raise RuntimeError("Unexpected data shortage of trackcd")
+    elif trackcd >= 10 and trackcd <= 22:
+        trackkey = 'shiba'
+    elif trackcd >= 23 and trackcd <= 29:
+        trackkey = 'dirt'
+    else:
+        raise NotImplementedError("trackcd: " + str(trackcd) + " is not implemented")
+
+    # turf
+    if trackcd == 10:
+        lrkey = 's'
+    elif trackcd >= 11 and trackcd <= 16:
+        lrkey = 'l'
+    elif trackcd >= 17 and trackcd <= 22:
+        lrkey = 'r'
+    # dirt
+    elif trackcd == 29:
+        lrkey = 's'
+    elif trackcd == 23 or trackcd == 25 or trackcd == 27:
+        lrkey = 'l'
+    elif trackcd == 24 or trackcd == 26 or trackcd == 28:
+        lrkey = 'r'
+
     if kakuteijyuni <= 5:
-        jyunikey = str(kakuteijyuni)
+        honsyokin_str = race_info[RaceInfoReference.index('honsyokin%d' % (kakuteijyuni,))]
+        honsyokin = int(honsyokin_str) if not honsyokin_str is None else 0
+        fukasyokin_str = race_info[RaceInfoReference.index('fukasyokin%d' % (kakuteijyuni,))]
+        fukasyokin = int(fukasyokin_str) if not fukasyokin_str is None else 0
 
-        kyori = race_info['kyori']
-        if kyori >= 1000 and kyori <= 1600:
-            kyorikey = 'u16'
-        elif kyori <= 2200:
-            kyorikey = 'u22'
-        elif kyori <= 2800:
-            kyorikey = 'u28'
-        elif kyori > 2800 and kyori <= 3600:
-            kyorikey = 'o28'
-        else:
-            raise RuntimeError("Unexpected kyori type: %d" % (kyori,))
-
-        if trackcd == 0:
-            raise RuntimeError("Unexpected data shortage of trackcd")
-        elif trackcd >= 10 and trackcd <= 22:
-            trackkey = 'shiba'
-        elif trackcd >= 23 and trackcd <= 29:
-            trackkey = 'dirt'
-        else:
-            raise NotImplementedError("trackcd: " + str(trackcd) + " is not implemented")
-
-        # turf
-        if trackcd == 10:
-            lrkey = 's'
-        elif trackcd >= 11 and trackcd <= 14:
-            lrkey = 'l'
-        elif trackcd >= 17 and trackcd <= 20:
-            lrkey = 'r'
-        # dirt
-        elif trackcd == 29:
-            lrkey = 's'
-        elif trackcd == 23 or trackcd == 25 or trackcd == 27:
-            lrkey = 'l'
-        elif trackcd == 24 or trackcd == 26 or trackcd == 28:
-            lrkey = 'r'
-
-        increment(statistics, 'ruikeichakukaisu')
         increment(statistics, 'chakukaisu%d' % (kakuteijyuni,))
         increment(statistics, '%s%schakukaisu%d' % (lrkey, trackkey, kakuteijyuni,))
-        increment(statistics, '%s%schakukaisu%d' % (kyori, trackkey, kakuteijyuni,))
-
+        increment(statistics, '%s%schakukaisu%d' % (kyorikey, trackkey, kakuteijyuni,))
         # syokin
-        statistics['ruikeihon']
-        honsyokin_str = race_info['honsyokin%d' % (kakuteijyuni,)]
-        honsyokin = int(honsyokin_str) if not honsyokin is None else 0
         add(statistics, 'ruikeihon%s' % (trackkey,), honsyokin)
-
-        fukasyokin_str = race_info['fukasyokin%d' % (kakuteijyuni,)]
-        fukasyokin = int(fukasyokin_str) if not fukasyokin is None else 0
         add(statistics, 'ruikeifuka%s' % (trackkey,), fukasyokin)
 
+    increment(statistics, 'ruikeichakukaisu')
 
     # kyakusitu
     if kyakusitukubun > 0:
         increment(statistics, 'kyakusitukubunkaisu%d' % (kyakusitukubun,))
-
-    return statistics
-
 
 class IDFilter:
     @classmethod
@@ -211,12 +206,13 @@ class SelectPhrase:
 class InsertPhrase:
     @classmethod
     def generate(self, id, kettonum, statistics):
-        str =  "INSERT INTO %s VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s'" % ((target_table,) + id + (kettonum,))
+        str =  "INSERT INTO %s VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s'" % ((tablename,) + id + (kettonum,))
 
         for value in list(statistics.values()):
             str = str + ", '%d'" % value
 
         str = str + ");"
+        return str
 
 class IDListReference:
     def __init__(self, fromyearmonthday, toyearmonthday):
@@ -242,12 +238,15 @@ class kettonumReference:
         return self.__cols.strip().split(', ').index(colname)
 
 class HorseInfoReference:
-    __cols =  'year, monthday, jyocd, kaiji, nichiji, racenum, kakuteijyuni, kyakusitukubun'
+    __cols =  'year, monthday, jyocd, kaiji, nichiji, racenum, ijyocd, kakuteijyuni, kyakusitukubun'
 
     def __init__(self, id, fromymd, kettonum):
         self.table      = 'n_uma_race'
         self.cols       = HorseInfoReference.__cols
-        self.conditions = "datakubun='7' AND concat(year, monthday) <= '%s' AND concat(year, monthday) > '%s' AND kettonum='%s'" % (id[0] + id[1], fromymd, kettonum) 
+        if fromymd is None:
+            self.conditions = "datakubun='7' AND concat(year, monthday) <= '%s' AND kettonum='%s'" % (id[0] + id[1], kettonum) 
+        else:
+            self.conditions = "datakubun='7' AND concat(year, monthday) <= '%s' AND concat(year, monthday) > '%s' AND kettonum='%s'" % (id[0] + id[1], fromymd, kettonum) 
         self.order      = 'year ASC, monthday ASC, jyocd ASC, nichiji ASC, racenum ASC'
         self.limit      = ''
 
@@ -354,7 +353,7 @@ def load_past_uma_race_list(id, fromymd, kettonum, everydb):
             row = everydb_cur.fetchone()
             if row == None:
                 break
-            if row[kettonumReference.index('ijyocd')] != '0':
+            if row[HorseInfoReference.index('ijyocd')] != '0':
                 continue
 
             id_list.append(( row[HorseInfoReference.index('year')],
@@ -369,7 +368,7 @@ def load_past_uma_race_list(id, fromymd, kettonum, everydb):
 
         return id_list, kakuteijyuni_list, kyakusitukubun_list
 
-def load_race_info(id):
+def load_race_info(id, everydb):
     with everydb.cursor('everydb_cur') as everydb_cur:
         # Get race specific uma info from n_race_uma
         query = SelectPhrase.generate(RaceInfoReference(id))
@@ -380,12 +379,10 @@ def load_race_info(id):
         return row
 
 def save_statistics(id, kettonum, statistics, connection):
-    with connection.cursor('wcur') as cur:
+    with connection.cursor() as cur:
         query = InsertPhrase.generate(id, kettonum, statistics)
-        print(query)
-        #cur.execute(query)
+        cur.execute(query)
     connection.commit()
-
 
 class StatisticsUpdator:
     def __init__(self):
@@ -402,7 +399,7 @@ class StatisticsUpdator:
             sys.exit(0)
 
     def __del__(self):
-        self.connection_raw .close()
+        self.connection_raw.close()
         self.connection_processed.close()
 
     def process(self, fromyearmonthday, toyearmonthday):
@@ -420,29 +417,35 @@ class StatisticsUpdator:
 
             for kettonum in kettonum_list:
                 print('processing ketto: %s\n' % kettonum, end='\033[1A\r', flush=True)
-                latest_statistics = load_latest_statistics(kettonum, self.connection_processed)
-                if not latest_statistics is None:
-                    latestymd = latest_statistics['year'] + latest_statistics['monthday']
+                statistics_row = load_latest_statistics(kettonum, self.connection_processed)
+                if not statistics_row is None:
+                    latest_statistics = gen_initial_statistics()
+                    for key, i in zip(latest_statistics.keys(), range(len(latest_statistics))):
+                        latest_statistics[key] = statistics_row[7 + i]
+                    latestymd = statistics_row[0] + statistics_row[1]
                 else:
                     latest_statistics = gen_initial_statistics()
-                    latestymd = fromyearmonthday
+                    latestymd = None
 
                 past_id_list, kakuteijyuni_list, kyakusitukubun_list = load_past_uma_race_list(id, latestymd, kettonum, self.connection_raw)
-                print(past_id_list)
                 for pastid, kakuteijyuni, kyakusitukubun in zip(past_id_list, kakuteijyuni_list, kyakusitukubun_list):
                     try:
-                        race_info = load_race_info(pastid)
+                        race_info = load_race_info(pastid, self.connection_raw)
                     except RuntimeError as e:
                         print(e)
                         exit()
-
-                    update_statistics(latest_statistics, race_info, kakuteijyuni, kyakusitukubun)
 
                     try:
-                        save_statistics(id, kettonum, latest_statistics, self.connection_processed)
+                        update_statistics(latest_statistics, race_info, kakuteijyuni, kyakusitukubun)
                     except RuntimeError as e:
                         print(e)
-                        exit()
+                        continue
+
+                try:
+                    save_statistics(id, kettonum, latest_statistics, self.connection_processed)
+                except RuntimeError as e:
+                    print(e)
+                    exit()
 
             print('', end='\033[2A\r', flush=True)
 
@@ -450,7 +453,8 @@ class StatisticsUpdator:
 
 if __name__ == "__main__":
     updator = StatisticsUpdator()
-    updator.process('19900000', '20200000')
+    updator.process('19970320', '20200000')
+    #updator.process('19900000', '20200000')
     #updator.process('19990000', '20100000')
     #updator.process('20100000', '20200000')
 
