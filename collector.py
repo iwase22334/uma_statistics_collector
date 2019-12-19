@@ -120,7 +120,7 @@ def update_statistics(statistics, race_info, kakuteijyuni_str, kyakusitukubun_st
         kyorikey = 'u22'
     elif kyori <= 2800:
         kyorikey = 'u28'
-    elif kyori > 2800 and kyori <= 3600:
+    elif kyori > 2800 and kyori <= 6000:
         kyorikey = 'o28'
     else:
         raise RuntimeError("Unexpected kyori type: %d" % (kyori,))
@@ -453,7 +453,14 @@ class StatisticsUpdator:
 
 if __name__ == "__main__":
     updator = StatisticsUpdator()
-    updator.process('19970320', '20200000')
+    print("src: ", os.environ.get('DATABASE_URL_SRC'))
+    print("dst: ", os.environ.get('DB_UMA_PROCESSED'))
+
+    fromymd = os.environ.get('UMA_STATISTICS_FROM_DATE')
+    toymd = os.environ.get('UMA_STATISTICS_TO_DATE')
+    print(fromymd, "~", toymd)
+
+    updator.process(fromymd, toymd)
     #updator.process('19900000', '20200000')
     #updator.process('19990000', '20100000')
     #updator.process('20100000', '20200000')

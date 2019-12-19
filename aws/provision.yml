@@ -1,0 +1,93 @@
+- hosts: all
+  remote_user: ubuntu
+  become: True
+
+  handlers:
+    - name: Restart postgresql
+      service: name=postgresql state=restarted enabled=yes
+
+  tasks:
+    - name:
+      debug: msg="hosts:{{ inventory_hostname }}"
+
+    - name:
+      debug: msg="{{ ec2_tag_Name }}"
+
+    - name: Assign hostname
+      hostname:
+        name: "{{ ec2_tag_Name }}"
+
+    - debug: msg="play_hosts={{play_hosts}}"
+    - debug: msg="ansible_distribution={{ansible_distribution}}"
+
+    - name: postgresql key
+      apt_key:
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        state: present
+      become: true
+
+    - name: create variable
+      command: bash -c "echo \"deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main\" "
+      register: repo_line
+
+    - debug: 
+        msg: "{{ repo_line.stdout }}"
+
+    - name: add postgresql repo 
+      apt_repository:
+        repo: "{{ repo_line.stdout }}"
+        state: present
+      become: true
+
+    - name: install postgresql
+      apt:
+        name: "postgresql-11"
+        state: present
+        update_cache: yes
+      become: true
+
+    - name: isntall tools
+      apt:
+        name: ['python-dev', 'libpq-dev', 'python-psycopg2']
+      become: true
+      notify: Restart postgresql
+
+    - name: start postgresql
+      service: name=postgresql state=started  enabled=yes
+
+    - name: Create postgres user for my app
+      become: yes
+      become_user: postgres
+      postgresql_user:
+        name: "uma"
+        password: "password"
+      notify: Restart postgresql
+
+    - name: Ensure we have access from the new user
+      become: yes
+      become_user: postgres
+      postgresql_privs:
+        db: postgres
+        role: uma
+        objs: ALL_IN_SCHEMA
+        privs: SELECT,INSERT,UPDATE,DELETE
+      notify: Restart postgresql
+
+- hosts: tag_Role_dataprocessor
+  remote_user: ubuntu
+  become: True
+  tasks:
+    - name: copy database
+      copy:
+        src: /tmp/database/statistics_source.sql
+        dest: /tmp/database/statistics_source.sql
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Dump an existing database to a file
+      postgresql_db:
+        name: everydb2
+        state: restore
+        target: /tmp/database/statistics_source.sql
+
