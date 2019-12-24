@@ -1,9 +1,0 @@
-- hosts: localhost
-  connection: local
-  gather_facts: no
-
-  tasks:
-    - name: Destroy resources by Terraform
-      terraform:
-        project_path: 'terraform/'
-        state: absent
