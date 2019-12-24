@@ -271,10 +271,10 @@ class RaceInfoReference:
 class IsExistsStatisticsReference:
     __cols =  '1'
 
-    def __init__(self, id):
+    def __init__(self, id, kettonum):
         self.table      = tablename
         self.cols       = IsExistsStatisticsReference.__cols
-        self.conditions = IDFilter.generate_phrase(id)
+        self.conditions = IDFilter.generate_phrase(id) + " AND kettonum='%s'" % kettonum
         self.order      = ''
         self.limit      = ''
 
@@ -321,10 +321,10 @@ def load_kettonum_list(id, everydb):
 
         return kettonum_list
 
-def is_exists_statistics(id, uma_processed):
+def is_exists_statistics(id, kettonum, uma_processed):
     with uma_processed.cursor('uma_processed_cur') as up_cur:
         # Get race specific uma info from n_race_uma
-        query = SelectPhrase.generate(IsExistsStatisticsReference(id))
+        query = SelectPhrase.generate(IsExistsStatisticsReference(id, kettonum))
         up_cur.execute(query)
         row = up_cur.fetchone()
 
@@ -417,14 +417,20 @@ class StatisticsUpdator:
 
             for kettonum in kettonum_list:
                 print('processing ketto: %s\n' % kettonum, end='\033[1A\r', flush=True)
+
+                if is_exists_statistics(id, kettonum, self.connection_processed):
+                    print("already exists: ", id, kettonum)
+                    continue
+
                 statistics_row = load_latest_statistics(kettonum, self.connection_processed)
+                latest_statistics = gen_initial_statistics()
+
                 if not statistics_row is None:
-                    latest_statistics = gen_initial_statistics()
                     for key, i in zip(latest_statistics.keys(), range(len(latest_statistics))):
                         latest_statistics[key] = statistics_row[7 + i]
                     latestymd = statistics_row[0] + statistics_row[1]
+
                 else:
-                    latest_statistics = gen_initial_statistics()
                     latestymd = None
 
                 past_id_list, kakuteijyuni_list, kyakusitukubun_list = load_past_uma_race_list(id, latestymd, kettonum, self.connection_raw)
@@ -433,7 +439,7 @@ class StatisticsUpdator:
                         race_info = load_race_info(pastid, self.connection_raw)
                     except RuntimeError as e:
                         print(e)
-                        exit()
+                        continue
 
                     try:
                         update_statistics(latest_statistics, race_info, kakuteijyuni, kyakusitukubun)
@@ -452,7 +458,16 @@ class StatisticsUpdator:
         print('\n\n\n\n')
 
 if __name__ == "__main__":
+
     updator = StatisticsUpdator()
+    print("src: ", os.environ.get('DATABASE_URL_SRC'))
+    print("dst: ", os.environ.get('DB_UMA_PROCESSED'))
+
+#    fromymd = os.environ.get('UMA_STATISTICS_FROM_DATE')
+#    toymd = os.environ.get('UMA_STATISTICS_TO_DATE')
+#    print(fromymd, "~", toymd)
+#    updator.process(fromymd, toymd)
+
     updator.process('19970320', '20200000')
     #updator.process('19900000', '20200000')
     #updator.process('19990000', '20100000')
