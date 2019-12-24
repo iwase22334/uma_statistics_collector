@@ -120,7 +120,7 @@ def update_statistics(statistics, race_info, kakuteijyuni_str, kyakusitukubun_st
         kyorikey = 'u22'
     elif kyori <= 2800:
         kyorikey = 'u28'
-    elif kyori > 2800 and kyori <= 3600:
+    elif kyori > 2800 and kyori <= 6000:
         kyorikey = 'o28'
     else:
         raise RuntimeError("Unexpected kyori type: %d" % (kyori,))
