@@ -71,9 +71,12 @@
       service: name=postgresql state=restarted enabled=yes
 
   vars:
-    sqlfile_src_dir: ./processeddb
+    processeddb_dir: ./processeddb
     sqlfile_dst_dir: /tmp/uma_statistics_01
     sqlfile_name: create_uma_statistics_01.sql
+    postgres_conf_dir: /etc/postgresql/11/main
+    pgconf_name: postgresql.conf
+    pghbaconf_name: pg_hba.conf
 
   tasks:
     - name: mkdir
@@ -83,10 +86,26 @@
 
     - name: copy file
       copy:
-        src: "{{ sqlfile_src_dir }}/{{sqlfile_name}}"
+        src: "{{ processeddb_dir }}/{{sqlfile_name}}"
         dest: "{{ sqlfile_dst_dir }}/{{sqlfile_name}}"
         owner: ubuntu
         group: ubuntu
+        mode: 644
+
+    - name: copy postgres config file
+      copy:
+        src: "{{ processeddb_dir }}/{{pgconf_name}}"
+        dest: "{{ postgres_conf_dir }}/{{pgconf_name}}"
+        owner: postgres
+        group: postgres
+        mode: 640
+
+    - name: copy postgres config file 2
+      copy:
+        src: "{{ processeddb_dir }}/{{ pghbaconf_name }}"
+        dest: "{{ postgres_conf_dir }}/{{ pghbaconf_name }}"
+        owner: postgres
+        group: postgres
         mode: 644
 
     - name: create db
@@ -134,11 +153,6 @@
       file:
         path: "{{ db_dir }}"
         state: directory
-
-    #- name: Download file and force basic auth
-    #  get_url:
-    #    url: "{{ db_url }}"
-    #    dest: "{{ db_dir }}/{{db_file_name}}"
 
     - name: copy file
       copy:
