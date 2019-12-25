@@ -1,3 +1,6 @@
+############################################################
+#               All                                        #
+############################################################
 - hosts: all
   remote_user: ubuntu
   become: True
@@ -62,6 +65,9 @@
         password: "password"
       notify: Restart postgresql
 
+############################################################
+#               target db                                  #
+############################################################
 - hosts: tag_Role_processeddb
   remote_user: ubuntu
   become: True
@@ -90,7 +96,7 @@
         dest: "{{ sqlfile_dst_dir }}/{{sqlfile_name}}"
         owner: ubuntu
         group: ubuntu
-        mode: 644
+        mode: 0644
 
     - name: copy postgres config file
       copy:
@@ -98,7 +104,7 @@
         dest: "{{ postgres_conf_dir }}/{{pgconf_name}}"
         owner: postgres
         group: postgres
-        mode: 640
+        mode: 0640
 
     - name: copy postgres config file 2
       copy:
@@ -106,7 +112,7 @@
         dest: "{{ postgres_conf_dir }}/{{ pghbaconf_name }}"
         owner: postgres
         group: postgres
-        mode: 644
+        mode: 0644
 
     - name: create db
       become: yes
@@ -132,6 +138,9 @@
         privs: SELECT,INSERT,UPDATE,DELETE
       notify: Restart postgresql
 
+############################################################
+#               data proceessor                            #
+############################################################
 - hosts: tag_Role_dataprocessor
   remote_user: ubuntu
   become: True
