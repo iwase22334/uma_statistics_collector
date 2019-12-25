@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import numpy as np
 import os
 import psycopg2
 import datetime
@@ -387,7 +386,7 @@ def save_statistics(id, kettonum, statistics, connection):
 class StatisticsUpdator:
     def __init__(self):
         try:
-            self.connection_raw  = psycopg2.connect(os.environ.get('DATABASE_URL_SRC'))
+            self.connection_raw  = psycopg2.connect(os.environ.get('DB_EVERYDB2'))
         except:
             print('psycopg2: opening connection 01 faied')
             sys.exit(0)
@@ -405,9 +404,8 @@ class StatisticsUpdator:
     def process(self, fromyearmonthday, toyearmonthday):
         id_list = IDReader.load_data(fromyearmonthday, toyearmonthday, self.connection_raw)
 
-        for id in tqdm(id_list, desc='Gathering race data'):
-            print('\nprocessing id: %s%s%s%s%s%s' % id)
-            #print('\nprocessing id: %s%s%s%s%s%s' % id)
+        for id in id_list:
+            print('processing id: %s%s%s%s%s%s' % id)
 
             try:
                 kettonum_list = load_kettonum_list(id, self.connection_raw)
@@ -416,8 +414,6 @@ class StatisticsUpdator:
                 continue
 
             for kettonum in kettonum_list:
-                print('processing ketto: %s\n' % kettonum, end='\033[1A\r', flush=True)
-
                 if is_exists_statistics(id, kettonum, self.connection_processed):
                     print("already exists: ", id, kettonum)
                     continue
@@ -453,22 +449,21 @@ class StatisticsUpdator:
                     print(e)
                     exit()
 
-            print('', end='\033[2A\r', flush=True)
-
-        print('\n\n\n\n')
-
 if __name__ == "__main__":
 
     updator = StatisticsUpdator()
-    print("src: ", os.environ.get('DATABASE_URL_SRC'))
+    fromymd = os.environ.get('UMA_STATISTICS_FROM_DATE')
+    toymd = os.environ.get('UMA_STATISTICS_TO_DATE')
+
+    print("src: ", os.environ.get('DB_EVERYDB2'))
     print("dst: ", os.environ.get('DB_UMA_PROCESSED'))
+    print(fromymd, "~", toymd)
 
-#    fromymd = os.environ.get('UMA_STATISTICS_FROM_DATE')
-#    toymd = os.environ.get('UMA_STATISTICS_TO_DATE')
-#    print(fromymd, "~", toymd)
-#    updator.process(fromymd, toymd)
+    updator.process(fromymd, toymd)
 
-    updator.process('19970320', '20200000')
+    print("complete")
+
+    #updator.process('19970320', '20200000')
     #updator.process('19900000', '20200000')
     #updator.process('19990000', '20100000')
     #updator.process('20100000', '20200000')

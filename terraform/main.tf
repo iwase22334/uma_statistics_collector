@@ -96,6 +96,16 @@ resource "aws_security_group" "default" {
 #####################################
 ## instance 
 #####################################
+resource "aws_s3_bucket" "everydb2store" {
+  bucket = "iwase22334-uma-everydb2store"
+  acl    = "public-read"
+
+  tags = {
+    Name = "everydb2store"
+    Role = "storage"
+  }
+}
+
 resource "aws_instance" "processed_db" {
     ami               = "${var.db_ami}"
     instance_type     = "${var.db_instance}"
@@ -131,7 +141,7 @@ resource "aws_instance" "dataprocessor" {
         Name = "${format("dataprocessor_%02d", count.index + 1)}"
         Role = "dataprocessor"
         Peer = "${var.uma_processed_ip}"
-        FromDate = "${format("%d", 19900000 + count.index * (200000 / var.dataprocessor_count))}"
-        ToDate = "${format("%d", 19900000 + (count.index + 1) * (200000 / var.dataprocessor_count) - 1)}"
+        FromDate = "${format("%d", 19900000 + count.index * (300000 / var.dataprocessor_count))}"
+        ToDate = "${format("%d", 19900000 + (count.index + 1) * (300000 / var.dataprocessor_count) - 1)}"
     }
 }

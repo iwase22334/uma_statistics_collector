@@ -9,3 +9,8 @@
         state: present
       register: terraform
 
+    - name: Upload Object
+      shell: "aws s3 cp /tmp/uma_statistics_01/stat_src.sql s3://iwase22334-uma-everydb2store/uma_statistics_01/stat_src.sql --acl public-read"
+      register: result
+      changed_when: False
+

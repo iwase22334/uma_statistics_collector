@@ -1,0 +1,55 @@
+---
+- name:
+  debug: msg="hosts:{{ inventory_hostname }}"
+
+- debug: msg="{{ ec2_tag_Name }}"
+
+- name: Assign hostname
+  hostname:
+    name: "{{ ec2_tag_Name }}"
+
+- debug: msg="play_hosts={{play_hosts}}"
+- debug: msg="ansible_distribution={{ansible_distribution}}"
+
+- name: postgresql key
+  apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+  become: true
+
+- name: create variable
+  command: bash -c "echo \"deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main\" "
+  register: repo_line
+
+- debug:
+    msg: "{{ repo_line.stdout }}"
+
+- name: add postgresql repo 
+  apt_repository:
+    repo: "{{ repo_line.stdout }}"
+    state: present
+  become: true
+
+- name: install postgres tools
+  become: true
+  apt:
+    name:
+      - 'python3.7'
+      - 'postgresql-11'
+      - 'python-dev'
+      - 'libpq-dev'
+      - 'python-psycopg2'
+    state: present
+    update_cache: yes
+
+- name: start postgresql
+  service: name=postgresql state=started  enabled=yes
+
+- name: Create postgres user for my app
+  become: yes
+  become_user: postgres
+  postgresql_user:
+    name: "uma"
+    password: "password"
+  notify: Restart postgresql
+

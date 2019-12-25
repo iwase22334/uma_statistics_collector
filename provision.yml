@@ -9,61 +9,8 @@
     - name: Restart postgresql
       service: name=postgresql state=restarted enabled=yes
 
-  tasks:
-    - name:
-      debug: msg="hosts:{{ inventory_hostname }}"
-
-    - debug: msg="{{ ec2_tag_Name }}"
-
-    - name: Assign hostname
-      hostname:
-        name: "{{ ec2_tag_Name }}"
-
-    - debug: msg="play_hosts={{play_hosts}}"
-    - debug: msg="ansible_distribution={{ansible_distribution}}"
-
-    - name: postgresql key
-      apt_key:
-        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
-        state: present
-      become: true
-
-    - name: create variable
-      command: bash -c "echo \"deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main\" "
-      register: repo_line
-
-    - debug:
-        msg: "{{ repo_line.stdout }}"
-
-    - name: add postgresql repo 
-      apt_repository:
-        repo: "{{ repo_line.stdout }}"
-        state: present
-      become: true
-
-    - name: install postgresql
-      apt:
-        name: "postgresql-11"
-        state: present
-        update_cache: yes
-      become: true
-
-    - name: start postgresql
-      service: name=postgresql state=started  enabled=yes
-
-    - name: install tools
-      apt:
-        name: ['python-dev', 'libpq-dev', 'python-psycopg2']
-      become: true
-      notify: Restart postgresql
-
-    - name: Create postgres user for my app
-      become: yes
-      become_user: postgres
-      postgresql_user:
-        name: "uma"
-        password: "password"
-      notify: Restart postgresql
+  roles:
+    - postgres
 
 ############################################################
 #               target db                                  #
@@ -77,66 +24,14 @@
       service: name=postgresql state=restarted enabled=yes
 
   vars:
-    processeddb_dir: ./processeddb
     sqlfile_dst_dir: /tmp/uma_statistics_01
     sqlfile_name: create_uma_statistics_01.sql
     postgres_conf_dir: /etc/postgresql/11/main
     pgconf_name: postgresql.conf
     pghbaconf_name: pg_hba.conf
 
-  tasks:
-    - name: mkdir
-      file:
-        path: "{{ sqlfile_dst_dir }}"
-        state: directory
-
-    - name: copy file
-      copy:
-        src: "{{ processeddb_dir }}/{{sqlfile_name}}"
-        dest: "{{ sqlfile_dst_dir }}/{{sqlfile_name}}"
-        owner: ubuntu
-        group: ubuntu
-        mode: 0644
-
-    - name: copy postgres config file
-      copy:
-        src: "{{ processeddb_dir }}/{{pgconf_name}}"
-        dest: "{{ postgres_conf_dir }}/{{pgconf_name}}"
-        owner: postgres
-        group: postgres
-        mode: 0640
-
-    - name: copy postgres config file 2
-      copy:
-        src: "{{ processeddb_dir }}/{{ pghbaconf_name }}"
-        dest: "{{ postgres_conf_dir }}/{{ pghbaconf_name }}"
-        owner: postgres
-        group: postgres
-        mode: 0644
-
-    - name: create db
-      become: yes
-      become_user: postgres
-      postgresql_db:
-        name: uma_processed
-        state: present
-
-    - name: Run queries from SQL script
-      become: yes
-      become_user: postgres
-      postgresql_query:
-        db: uma_processed
-        path_to_script: "{{ sqlfile_dst_dir }}/{{sqlfile_name}}"
-
-    - name: Ensure we have access from the new user
-      become: yes
-      become_user: postgres
-      postgresql_privs:
-        db: uma_processed
-        role: uma
-        objs: ALL_IN_SCHEMA
-        privs: SELECT,INSERT,UPDATE,DELETE
-      notify: Restart postgresql
+  roles:
+    - processeddb
 
 ############################################################
 #               data proceessor                            #
@@ -150,60 +45,10 @@
       service: name=postgresql state=restarted enabled=yes
 
   vars:
-    db_dir: /tmp/uma_statistics_01
+    proj_dir: /tmp/uma_statistics_01
+    script_name: collector.py
     db_file_name: stat_src.sql
-    db_url: https://drive.google.com/open?id=1U0KXNXjXaFVsUVfuaUpGcmuZ2IBnPk2O
+    s3_bucket: https://iwase22334-uma-everydb2store.s3-us-west-2.amazonaws.com/uma_statistics_01/stat_src.sql
 
-  tasks:
-    - debug: msg={{ db_dir }}
-    - debug: msg={{ db_dir }}/{{ db_file_name }}
-
-    - name: mkdir
-      file:
-        path: "{{ db_dir }}"
-        state: directory
-
-    - name: copy file
-      copy:
-        src: "{{ db_dir }}/{{db_file_name}}"
-        dest: "{{ db_dir }}/{{db_file_name}}"
-        owner: ubuntu
-        group: ubuntu
-        mode: 644
-
-    - name: create db
-      become: yes
-      become_user: postgres
-      postgresql_db:
-        name: everydb2
-        state: present
-
-    - name: Restore database
-      become: yes
-      become_user: postgres
-      postgresql_db:
-        name: everydb2
-        state: restore
-        target: "{{ db_dir }}/{{db_file_name}}"
-      notify: Restart postgresql
-
-    - name: Ensure we have access from the new user
-      become: yes
-      become_user: postgres
-      postgresql_privs:
-        db: everydb2
-        role: uma
-        objs: ALL_IN_SCHEMA
-        privs: SELECT,INSERT,UPDATE,DELETE
-      notify: Restart postgresql
-
-    - shell: echo $DB_UMA_PROCESSED
-      environment:
-        PGHOST: "{{ec2_tag_Peer}}"
-        PGPORT: "5433"
-        PGUSER: "postgres"
-        PGPASSWORD: "password"
-        DB_UMA_PROCESSED: "postgresql://postgres:password@{{ec2_tag_Peer}}:5433/uma_processed"
-        UMA_STATISTICS_FROM_DATE: "{{ ec2_tag_FromDate }}"
-        UMA_STATISTICS_TO_DATE: "{{ ec2_tag_ToDate }}"
-
+  roles:
+    - dataprocessor

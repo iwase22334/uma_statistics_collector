@@ -7,8 +7,3 @@
       shell: "aws s3 rm s3://iwase22334-uma-everydb2store/uma_statistics_01 --recursive"
       register: result
       changed_when: False
-
-    - name: Destroy resources by Terraform
-      terraform:
-        project_path: 'terraform/'
-        state: absent
